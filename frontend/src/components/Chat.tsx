@@ -1,9 +1,30 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 type Message = {
   id: number;
   role: 'user' | 'assistant';
   content: string;
+};
+
+const markdownComponents: Components = {
+  code({ inline, className, children, ...props }) {
+    const language = /language-(\w+)/.exec(className || '')?.[1];
+    if (inline) {
+      return (
+        <code className="inline-code" {...props}>
+          {children}
+        </code>
+      );
+    }
+    return (
+      <pre className={`code-block ${language ?? ''}`} {...props}>
+        <code>{children}</code>
+      </pre>
+    );
+  },
 };
 
 export const Chat: React.FC = () => {
@@ -74,7 +95,15 @@ export const Chat: React.FC = () => {
         {messages.map((m) => (
           <div key={m.id} className={`message ${m.role}`}>
             <div className="message-role">{m.role === 'user' ? 'You' : 'Assistant'}</div>
-            <div className="message-content">{m.content}</div>
+            <div className="message-content">
+              {m.role === 'assistant' ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                  {m.content}
+                </ReactMarkdown>
+              ) : (
+                m.content
+              )}
+            </div>
           </div>
         ))}
       </div>
