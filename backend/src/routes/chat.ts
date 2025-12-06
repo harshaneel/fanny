@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { chatWithLocalLLM } from '../services/llm.js';
 
 const chatRequestSchema = z.object({
   message: z.string().min(1),
@@ -14,11 +15,13 @@ export async function chatRoutes(server: FastifyInstance) {
 
     const { message } = parseResult.data;
 
-    // Placeholder: later this will call the local LLM + tools pipeline.
-    // For now, echo back with a stub.
-    return {
-      reply: `You said: "${message}". AI pipeline not wired yet, but backend is ready.`,
-    };
+    try {
+      const replyText = await chatWithLocalLLM(message);
+      return { reply: replyText };
+    } catch (err) {
+      request.log.error({ err }, 'LLM call failed');
+      return reply.status(500).send({ error: 'LLM unavailable. Is Ollama running locally?' });
+    }
   });
 }
 
